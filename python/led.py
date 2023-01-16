@@ -91,24 +91,18 @@ def _update_wled():
     pixels = np.clip(pixels, 0, 255).astype(int)
     # Optionally apply gamma correc tio
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
-
-    idx = [i for i in range(pixels.shape[1]) if not np.array_equal(p[:, i], _prev_pixels[:, i])]
-    MAX_PIXELS_PER_PACKET = 489
+    idx = range(p.shape[1])
+    MAX_PIXELS_PER_PACKET = 400
     n_packets = len(idx) // MAX_PIXELS_PER_PACKET + 1
     idx = np.array_split(idx, n_packets)
     for packet_indices in idx:
-        m = [4,255]
+        m = [4,2, packet_indices[0] >> 8,packet_indices[0] & 0xFF]
         for i in packet_indices:
-            m.append(i >> 8) # Index of pixel to change HIGH
-            m.append(i & 0xFF) # Index of pixel to change LOW
             m.append(p[0][i])  # Pixel red value
             m.append(p[1][i])  # Pixel green value
             m.append(p[2][i])  # Pixel blue value
-
         m = bytes(m)
-         _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
-    _prev_pixels = np.copy(p)
-
+        _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
 
 def _update_pi():
     """Writes new LED values to the Raspberry Pi's LED strip
@@ -184,9 +178,9 @@ if __name__ == '__main__':
     import time
     # Turn all pixels off
     pixels *= 0
-    pixels[0, 0] = 255  # Set 1st pixel red
-    pixels[1, 1] = 255  # Set 2nd pixel green
-    pixels[2, 2] = 255  # Set 3rd pixel blue
+    pixels[0, 0] = 150  # Set 1st pixel red
+    pixels[1, 1] = 150  # Set 2nd pixel green
+    pixels[2, 2] = 150  # Set 3rd pixel blue
     print('Starting LED strand test')
     while True:
         pixels = np.roll(pixels, 1, axis=1)

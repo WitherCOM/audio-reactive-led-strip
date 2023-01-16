@@ -29,9 +29,9 @@ if DEVICE == 'esp8266':
     """Set to False because the firmware handles gamma correction + dither"""
 
 if DEVICE == 'wled':
-    UDP_IP = '192.168.0.150'
+    UDP_IP = '192.168.90.6'
     """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
-    UDP_PORT = 23970
+    UDP_PORT = 21324
     """Port number used for socket communication between Python and ESP8266"""
     SOFTWARE_GAMMA_CORRECTION = False
     """Set to False because the firmware handles gamma correction + dither"""
@@ -57,10 +57,10 @@ if DEVICE == 'blinkstick':
 USE_GUI = True
 """Whether or not to display a PyQtGraph GUI plot of visualization"""
 
-DISPLAY_FPS = True
+DISPLAY_FPS = False
 """Whether to display the FPS when running (can reduce performance)"""
 
-N_PIXELS = 60
+N_PIXELS = 1240
 """Number of pixels in the LED strip (must match ESP8266 firmware)"""
 
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
@@ -91,7 +91,7 @@ assert FPS <= _max_led_FPS, 'FPS must be <= {}'.format(_max_led_FPS)
 MIN_FREQUENCY = 200
 """Frequencies below this value will be removed during audio processing"""
 
-MAX_FREQUENCY = 12000
+MAX_FREQUENCY = 20000
 """Frequencies above this value will be removed during audio processing"""
 
 N_FFT_BINS = 24
