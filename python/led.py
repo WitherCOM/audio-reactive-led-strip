@@ -9,6 +9,9 @@ import config
 if config.DEVICE == 'esp8266':
     import socket
     _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+elif config.DEVICE == 'wled':
+    import socket
+    _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Raspberry Pi controls the LED strip directly
 elif config.DEVICE == 'pi':
     import neopixel
@@ -82,6 +85,30 @@ def _update_esp8266():
         _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
     _prev_pixels = np.copy(p)
 
+def _update_wled():
+    global pixels, _prev_pixels
+    # Truncate values and cast to integer
+    pixels = np.clip(pixels, 0, 255).astype(int)
+    # Optionally apply gamma correc tio
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+
+    idx = [i for i in range(pixels.shape[1]) if not np.array_equal(p[:, i], _prev_pixels[:, i])]
+    MAX_PIXELS_PER_PACKET = 489
+    n_packets = len(idx) // MAX_PIXELS_PER_PACKET + 1
+    idx = np.array_split(idx, n_packets)
+    for packet_indices in idx:
+        m = [4,255]
+        for i in packet_indices:
+            m.append(i >> 8) # Index of pixel to change HIGH
+            m.append(i & 0xFF) # Index of pixel to change LOW
+            m.append(p[0][i])  # Pixel red value
+            m.append(p[1][i])  # Pixel green value
+            m.append(p[2][i])  # Pixel blue value
+
+        m = bytes(m)
+         _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
+    _prev_pixels = np.copy(p)
+
 
 def _update_pi():
     """Writes new LED values to the Raspberry Pi's LED strip
@@ -140,6 +167,8 @@ def update():
     """Updates the LED strip values"""
     if config.DEVICE == 'esp8266':
         _update_esp8266()
+    elif config.DEVICE == 'wled':
+        _update_wled()
     elif config.DEVICE == 'pi':
         _update_pi()
     elif config.DEVICE == 'blinkstick':
