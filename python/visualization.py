@@ -175,6 +175,36 @@ def visualize_spectrum(y):
     output = np.array([r, g,b]) * 255
     return output
 
+_low_freq_avg_list = []
+_prev_beat = time.perf_counter()
+_pixels = np.tile(0, (3, config.N_PIXELS))
+def visualize_beat(y):
+    y_avg = np.mean(y)
+
+    low_freq = [y[i] for i in range(len(y)) if i*config.FPS < 1000]
+    low_freq_avg = np.mean(low_freq)
+    
+    global _low_freq_avg_list,_pixels
+    _low_freq_avg_list.append(low_freq_avg)
+    cumulative_avg = np.mean(_low_freq_avg_list)
+
+    bass = low_freq[:int(len(low_freq)/2)]
+    bass_avg = np.mean(bass)
+    pixels = None
+    if y_avg > config.MIN_VOLUME_THRESHOLD and (bass_avg > cumulative_avg*1.5 or (low_freq_avg < y_avg*1.2 and bass_avg > cumulative_avg)):
+        global _prev_beat
+        curr_time = time.perf_counter()
+        print(curr_time - _prev_beat)
+        _pixels = np.tile(255, (3, config.N_PIXELS))   
+        _prev_beat = curr_time
+    else:
+        _pixels = np.tile(0, (3, config.N_PIXELS))
+    if len(_low_freq_avg_list) > 50:
+        _low_freq_avg_list = _low_freq_avg_list[25:]
+
+    if y_avg < config.MIN_VOLUME_THRESHOLD:
+        low_freq_avg_list = []
+    return _pixels
 
 fft_plot_filter = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
                          alpha_decay=0.5, alpha_rise=0.99)
@@ -248,7 +278,7 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-visualization_effect = visualize_spectrum
+visualization_effect = visualize_beat
 """Visualization effect to display on the LED strip"""
 
 
@@ -315,28 +345,40 @@ if __name__ == '__main__':
         # Effect selection
         active_color = '#16dbeb'
         inactive_color = '#FFFFFF'
+        def beat_click(x):
+            global visualization_effect
+            visualization_effect = visualize_beat
+            beat_label.setText('Beat', color=active_color)
+            energy_label.setText('Energy', color=inactive_color)
+            scroll_label.setText('Scroll', color=inactive_color)
+            spectrum_label.setText('Spectrum', color=inactive_color)
         def energy_click(x):
             global visualization_effect
             visualization_effect = visualize_energy
+            beat_label.setText('Beat', color=inactive_color)
             energy_label.setText('Energy', color=active_color)
             scroll_label.setText('Scroll', color=inactive_color)
             spectrum_label.setText('Spectrum', color=inactive_color)
         def scroll_click(x):
             global visualization_effect
             visualization_effect = visualize_scroll
+            beat_label.setText('Beat', color=inactive_color)
             energy_label.setText('Energy', color=inactive_color)
             scroll_label.setText('Scroll', color=active_color)
             spectrum_label.setText('Spectrum', color=inactive_color)
         def spectrum_click(x):
             global visualization_effect
             visualization_effect = visualize_spectrum
+            beat_label.setText('Beat', color=inactive_color)
             energy_label.setText('Energy', color=inactive_color)
             scroll_label.setText('Scroll', color=inactive_color)
             spectrum_label.setText('Spectrum', color=active_color)
         # Create effect "buttons" (labels with click event)
+        beat_label = pg.LabelItem('Beat')
         energy_label = pg.LabelItem('Energy')
         scroll_label = pg.LabelItem('Scroll')
         spectrum_label = pg.LabelItem('Spectrum')
+        beat_label.mousePressEvent = beat_click
         energy_label.mousePressEvent = energy_click
         scroll_label.mousePressEvent = scroll_click
         spectrum_label.mousePressEvent = spectrum_click
@@ -347,6 +389,7 @@ if __name__ == '__main__':
         layout.nextRow()
         layout.addItem(freq_slider, colspan=3)
         layout.nextRow()
+        layout.addItem(beat_label)
         layout.addItem(energy_label)
         layout.addItem(scroll_label)
         layout.addItem(spectrum_label)

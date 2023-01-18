@@ -92,11 +92,12 @@ def _update_wled():
     # Optionally apply gamma correc tio
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     idx = range(p.shape[1])
-    MAX_PIXELS_PER_PACKET = 400
+    MAX_PIXELS_PER_PACKET = 480
     n_packets = len(idx) // MAX_PIXELS_PER_PACKET + 1
     idx = np.array_split(idx, n_packets)
     for packet_indices in idx:
-        m = [4,2, packet_indices[0] >> 8,packet_indices[0] & 0xFF]
+        packet_indices = (packet_indices + config.START_PIXEL)%config.N_PIXELS
+        m = [4,1, packet_indices[0]>> 8,packet_indices[0] & 0xFF]
         for i in packet_indices:
             m.append(p[0][i])  # Pixel red value
             m.append(p[1][i])  # Pixel green value
@@ -183,6 +184,9 @@ if __name__ == '__main__':
     pixels[2, 2] = 150  # Set 3rd pixel blue
     print('Starting LED strand test')
     while True:
-        pixels = np.roll(pixels, 1, axis=1)
+        pixels[:,:] = 255
         update()
-        time.sleep(.1)
+        time.sleep(.5)
+        pixels[:,:] = 0
+        update()
+        time.sleep(.5)

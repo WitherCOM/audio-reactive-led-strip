@@ -63,6 +63,9 @@ DISPLAY_FPS = False
 N_PIXELS = 1240
 """Number of pixels in the LED strip (must match ESP8266 firmware)"""
 
+START_PIXEL=0
+"""The pixel coordinate where to start effect"""
+
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
@@ -91,7 +94,7 @@ assert FPS <= _max_led_FPS, 'FPS must be <= {}'.format(_max_led_FPS)
 MIN_FREQUENCY = 200
 """Frequencies below this value will be removed during audio processing"""
 
-MAX_FREQUENCY = 20000
+MAX_FREQUENCY = 10000
 """Frequencies above this value will be removed during audio processing"""
 
 N_FFT_BINS = 24
